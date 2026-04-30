@@ -1,0 +1,21 @@
+{
+    "crypto": {
+        "BTCUSDT": {"exchange": "binance_futures", "category": "major", "description": "Bitcoin"},
+        "ETHUSDT": {"exchange": "binance_futures", "category": "major", "description": "Ethereum"},
+        "SOLUSDT": {"exchange": "binance_futures", "category": "layer1", "description": "Solana"},
+        "BNBUSDT": {"exchange": "binance_futures", "category": "exchange", "description": "BNB"},
+        "XRPUSDT": {"exchange": "binance_futures", "category": "payment", "description": "Ripple"},
+        "DOGEUSDT": {"exchange": "binance_futures", "category": "meme", "description": "Dogecoin"},
+        "ADAUSDT": {"exchange": "binance_futures", "category": "layer1", "description": "Cardano"},
+        "AVAXUSDT": {"exchange": "binance_futures", "category": "layer1", "description": "Avalanche"}
+    },
+    "commodities": {
+        "XAUUSD": {"exchange": "yahoo", "yahoo_symbol": "GC=F", "category": "precious_metal", "description": "Gold"},
+        "XAGUSD": {"exchange": "yahoo", "yahoo_symbol": "SI=F", "category": "precious_metal", "description": "Silver"},
+        "USOIL": {"exchange": "yahoo", "yahoo_symbol": "CL=F", "category": "energy", "description": "Crude Oil"}
+    },
+    "indices": {
+        "SPX500": {"exchange": "yahoo", "yahoo_symbol": "^GSPC", "category": "us_index", "description": "S&P 500"},
+        "NAS100": {"exchange": "yahoo", "yahoo_symbol": "^IXIC", "category": "us_index", "description": "NASDAQ"}
+    }
+}

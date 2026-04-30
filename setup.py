@@ -1,0 +1,45 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="mimovision-agent",
+    version="1.0.0",
+    description="Multi-modal financial analysis agent powered by Xiaomi MiMo",
+    author="ccbhsw",
+    author_email="ccbhsw@users.noreply.github.com",
+    url="https://github.com/ccbhsw/MimoVision-Agent",
+    packages=find_packages(),
+    python_requires=">=3.11",
+    install_requires=[
+        "aiohttp>=3.9.0",
+        "pydantic>=2.5.0",
+        "python-dotenv>=1.0.0",
+        "openai>=1.12.0",
+        "pandas>=2.1.0",
+        "numpy>=1.26.0",
+        "mplfinance>=0.12.10",
+        "matplotlib>=3.8.0",
+        "fastapi>=0.109.0",
+        "uvicorn>=0.27.0",
+        "python-telegram-bot>=21.0",
+        "loguru>=0.7.2",
+        "click>=8.1.7",
+        "pillow>=10.2.0",
+        "httpx>=0.26.0",
+        "rich>=13.7.0",
+        "feedparser>=6.0.11",
+        "beautifulsoup4>=4.12.0",
+    ],
+    entry_points={
+        "console_scripts": [
+            "mimovision=src.main:cli",
+        ],
+    },
+    classifiers=[
+        "Development Status :: 4 - Beta",
+        "Intended Audience :: Financial and Insurance Industry",
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Topic :: Office/Business :: Financial :: Investment",
+    ],
+)
