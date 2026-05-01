@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MimoVision-Agent - 金融智能分析系统</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#1a1a2e;--card:#16213e;--accent:#0f3460;--text:#e0e0e0;--green:#00e676;--red:#ff5252;--yellow:#ffd740;--blue:#448aff}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+.card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:20px;margin-bottom:16px}
+h1{font-size:1.6rem;font-weight:700;color:#fff}
+h2{font-size:1.1rem;font-weight:600;color:#aaa;margin-bottom:12px}
+.price-card{text-align:center;padding:12px}
+.price-card .symbol{font-size:.85rem;color:#888;margin-bottom:4px}
+.price-card .price{font-size:1.4rem;font-weight:700}
+.price-card .change{font-size:.8rem;margin-top:2px}
+.up{color:var(--green)}.down{color:var(--red)}
+.form-select,.form-check-input{background:var(--accent);color:var(--text);border:1px solid rgba(255,255,255,.15)}
+.btn-analyze{background:linear-gradient(135deg,#0f3460,#1a1a6e);color:#fff;border:none;padding:10px 30px;border-radius:8px;font-weight:600;cursor:pointer;width:100%}
+.btn-analyze:hover{filter:brightness(1.2)}
+.btn-analyze:disabled{opacity:.5;cursor:not-allowed}
+.signal-card{text-align:center;padding:24px;border-radius:12px;margin-bottom:16px}
+.signal-long{background:linear-gradient(135deg,#1b5e20,#2e7d32);color:#fff}
+.signal-short{background:linear-gradient(135deg,#b71c1c,#c62828);color:#fff}
+.signal-wait{background:linear-gradient(135deg,#37474f,#455a64);color:#fff}
+.signal-card .direction{font-size:2rem;font-weight:800;margin-bottom:8px}
+.indicator-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ind-item{background:var(--accent);padding:10px;border-radius:8px;text-align:center}
+.ind-item .label{font-size:.7rem;color:#888}.ind-item .value{font-size:1rem;font-weight:600}
+#fearGreedCanvas{display:block;margin:0 auto}
+.loading{display:none;text-align:center;padding:40px;color:#888}
+.loading.show{display:block}
+.spinner-border{width:2rem;height:2rem;border-width:3px}
+.results{display:none}
+.results.show{display:block}
+pre{background:var(--accent);padding:16px;border-radius:8px;font-size:.8rem;overflow-x:auto;max-height:400px;white-space:pre-wrap;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="container-fluid py-3">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h1>MimoVision-Agent</h1>
+    <span class="badge bg-secondary" id="statusBadge">Connecting...</span>
+  </div>
+
+  <!-- Price Panel -->
+  <div class="row" id="pricePanel">
+    <div class="col-6 col-md-3"><div class="card price-card"><div class="symbol">BTC/USDT</div><div class="price" id="btcPrice">--</div><div class="change" id="btcChange">--</div></div></div>
+    <div class="col-6 col-md-3"><div class="card price-card"><div class="symbol">ETH/USDT</div><div class="price" id="ethPrice">--</div><div class="change" id="ethChange">--</div></div></div>
+    <div class="col-6 col-md-3"><div class="card price-card"><div class="symbol">SOL/USDT</div><div class="price" id="solPrice">--</div><div class="change" id="solChange">--</div></div></div>
+    <div class="col-6 col-md-3"><div class="card price-card"><div class="symbol">GOLD</div><div class="price" id="goldPrice">--</div><div class="change" id="goldChange">--</div></div></div>
+  </div>
+
+  <!-- Analysis Form -->
+  <div class="card">
+    <h2>Analyze</h2>
+    <div class="row align-items-end">
+      <div class="col-md-4 mb-2">
+        <label class="form-label" style="font-size:.8rem;color:#888">Symbol</label>
+        <select class="form-select" id="symbolSelect">
+          <option value="BTCUSDT">BTC/USDT</option>
+          <option value="ETHUSDT">ETH/USDT</option>
+          <option value="SOLUSDT">SOL/USDT</option>
+          <option value="BNBUSDT">BNB/USDT</option>
+          <option value="XAUUSD">Gold (XAUUSD)</option>
+          <option value="XAGUSD">Silver (XAGUSD)</option>
+          <option value="USOIL">Crude Oil</option>
+        </select>
+      </div>
+      <div class="col-md-5 mb-2">
+        <label class="form-label" style="font-size:.8rem;color:#888">Timeframes</label>
+        <div class="d-flex gap-3 flex-wrap">
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="tf1H" value="1H" checked><label class="form-check-label" for="tf1H">1H</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="tf4H" value="4H" checked><label class="form-check-label" for="tf4H">4H</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="tf1D" value="1D" checked><label class="form-check-label" for="tf1D">1D</label></div>
+          <div class="form-check"><input class="form-check-input" type="checkbox" id="tf1W" value="1W"><label class="form-check-label" for="tf1W">1W</label></div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-2">
+        <button class="btn-analyze" id="analyzeBtn" onclick="runAnalysis()">Run Analysis</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <div class="spinner-border text-primary" role="status"></div>
+    <p class="mt-2">MiMo is analyzing...</p>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="signal-card" id="signalCard">
+          <div class="direction" id="signalDir">WAIT</div>
+          <div id="signalInfo"></div>
+        </div>
+        <div class="card" style="text-align:center">
+          <h2>Fear &amp; Greed</h2>
+          <canvas id="fearGreedCanvas" width="220" height="130"></canvas>
+          <div id="fgValue" style="font-size:1.2rem;font-weight:700;margin-top:8px">--</div>
+        </div>
+      </div>
+      <div class="col-md-8">
+        <div class="card">
+          <h2>Key Indicators</h2>
+          <div class="indicator-grid" id="indicatorsGrid"></div>
+        </div>
+        <div class="card">
+          <h2>Risk Assessment</h2>
+          <div class="row" id="riskPanel">
+            <div class="col-4 ind-item"><div class="label">Leverage</div><div class="value" id="levValue">--</div></div>
+            <div class="col-4 ind-item"><div class="label">Entry Zone</div><div class="value" id="entryValue">--</div></div>
+            <div class="col-4 ind-item"><div class="label">Stop Loss</div><div class="value" id="slValue">--</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Analysis Report</h2>
+          <pre id="reportText">Waiting for analysis...</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API=window.location.origin;
+
+async function fetchJSON(url){
+  const r=await fetch(url);
+  if(!r.ok) throw new Error(r.statusText);
+  return r.json();
+}
+
+async function updatePrices(){
+  try{
+    for(const[sym,id]of[['BTCUSDT','btc'],['ETHUSDT','eth'],['SOLUSDT','sol']]){
+      const d=(await fetchJSON(`${API}/api/price/${sym}`)).data;
+      document.getElementById(id+'Price').textContent=d.price?.toFixed(2)||'--';
+      const chgEl=document.getElementById(id+'Change');
+      if(d.price_change_pct!=null){const v=parseFloat(d.price_change_pct);chgEl.textContent=(v>=0?'+':'')+v.toFixed(2)+'%';chgEl.className='change '+(v>=0?'up':'down')}
+    }
+    document.getElementById('statusBadge').textContent='Online';
+    document.getElementById('statusBadge').className='badge bg-success';
+  }catch(e){console.error(e);document.getElementById('statusBadge').textContent='Offline';document.getElementById('statusBadge').className='badge bg-danger'}
+}
+
+async function updateFearGreed(){
+  try{
+    const d=(await fetchJSON(`${API}/api/fear-greed`)).data;
+    drawFearGreed(d.value);
+    document.getElementById('fgValue').textContent=d.value+' - '+(d.classification||'');
+  }catch(e){console.error(e)}
+}
+
+function drawFearGreed(value){
+  const canvas=document.getElementById('fearGreedCanvas'),ctx=canvas.getContext('2d');
+  const cx=110,cy=110,r=90;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Arc segments
+  const segments=[{start:Math.PI,end:Math.PI*1.25,color:'#ff5252'},{start:Math.PI*1.25,end:Math.PI*1.5,color:'#ff9800'},{start:Math.PI*1.5,end:Math.PI*1.75,color:'#ffd740'},{start:Math.PI*1.75,end:Math.PI*2,color:'#00e676'}];
+  segments.forEach(s=>{ctx.beginPath();ctx.arc(cx,cy,r,s.start,s.end);ctx.lineWidth=18;ctx.strokeStyle=s.color;ctx.stroke()});
+  // Needle
+  const angle=Math.PI+(value/100)*Math.PI;
+  const nx=cx+Math.cos(angle)*(r-25),ny=cy+Math.sin(angle)*(r-25);
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(nx,ny);ctx.lineWidth=3;ctx.strokeStyle='#fff';ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy,5,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+}
+
+async function runAnalysis(){
+  const btn=document.getElementById('analyzeBtn');
+  const sym=document.getElementById('symbolSelect').value;
+  const tfs=[...document.querySelectorAll('.form-check-input:checked')].map(c=>c.value);
+  if(!tfs.length){alert('Please select at least one timeframe');return}
+  btn.disabled=true;
+  document.getElementById('loading').classList.add('show');
+  document.getElementById('results').classList.remove('show');
+  try{
+    const body={symbol:sym,timeframes:tfs,include_news:true,include_charts:true};
+    const r=await fetch(`${API}/api/analyze`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error(r.statusText);
+    const result=(await r.json()).data;
+    displayResults(result);
+  }catch(e){alert('Analysis failed: '+e.message)}
+  finally{btn.disabled=false;document.getElementById('loading').classList.remove('show')}
+}
+
+function displayResults(d){
+  document.getElementById('results').classList.add('show');
+  // Signal
+  const dir=d.direction||'wait';
+  const card=document.getElementById('signalCard');
+  card.className='signal-card signal-'+dir;
+  document.getElementById('signalDir').textContent={long:'LONG',short:'SHORT',wait:'WAIT'}[dir]||dir.toUpperCase();
+  let info='';
+  if(d.entry_zone)info+='Entry: '+d.entry_zone+'<br>';
+  if(d.stop_loss)info+='SL: '+d.stop_loss+'<br>';
+  if(d.take_profit)info+='TP: '+d.take_profit+'<br>';
+  document.getElementById('signalInfo').innerHTML=info;
+  // Indicators
+  const ind=d.technical_indicators||{};
+  let grid='';
+  const items=[['Trend',ind.trend],['RSI',ind.rsi],['MACD',ind.macd],['MACD Cross',ind.macd_cross],['BB Pos',ind.bb_position],['ATR%',ind.atr_pct],['Vol Ratio',ind.volume_ratio],['KDJ K',ind.kdj_k]];
+  items.forEach(([l,v])=>{if(v!=null)grid+=`<div class="ind-item"><div class="label">${l}</div><div class="value">${v}</div></div>`});
+  document.getElementById('indicatorsGrid').innerHTML=grid;
+  // Risk
+  document.getElementById('levValue').textContent=d.leverage||'--';
+  document.getElementById('entryValue').textContent=d.entry_zone||'--';
+  document.getElementById('slValue').textContent=d.stop_loss||'--';
+  // Report
+  document.getElementById('reportText').textContent=d.summary||'No report generated.';
+  // Fear & Greed
+  updateFearGreed();
+}
+
+// Init
+updatePrices();
+updateFearGreed();
+setInterval(updatePrices,30000);
+</script>
+</body>
+</html>
