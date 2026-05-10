@@ -8,6 +8,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MiMo Powered](https://img.shields.io/badge/Powered%20by-Xiaomi%20MiMo-orange.svg)](https://github.com/XiaomiMiMo/MiMo)
 
+中文 | [English](./README_EN.md)
+
 </div>
 
 ---

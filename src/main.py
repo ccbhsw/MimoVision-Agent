@@ -75,7 +75,7 @@ def telegram():
 @cli.command()
 def version():
     """显示版本信息"""
-    click.echo("MimoVision-Agent v1.0.0")
+    click.echo("MimoVision-Agent v2.1.0")
     click.echo("Powered by Xiaomi MiMo-V2.5")
 
 
