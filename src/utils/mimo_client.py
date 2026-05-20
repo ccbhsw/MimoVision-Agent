@@ -365,3 +365,180 @@ class MiMoClient:
             temperature=0.3,
             max_tokens=1024,
         )
+
+    async def chain_of_thought(
+        self,
+        prompt: str,
+        system_prompt: str = "",
+        model: str = "mimo-v2.5-pro",
+        max_tokens: int = 4000,
+        temperature: float = 0.3,
+    ) -> MiMoResponse:
+        """
+        Chain-of-Thought推理调用
+
+        在prompt前添加CoT引导，让模型逐步推理
+        """
+        cot_system = (
+            (system_prompt + "\n\n" if system_prompt else "")
+            + "请使用Chain-of-Thought逐步推理。"
+            "每一步都要：\n"
+            "1. 明确当前分析目标\n"
+            "2. 列出支持/反对的证据\n"
+            "3. 给出中间结论和置信度\n"
+            "4. 标记发现的矛盾\n"
+            "最后给出综合结论。"
+        )
+        messages = [
+            MiMoMessage(role="system", content=cot_system),
+            MiMoMessage(role="user", content=prompt),
+        ]
+        return await self.chat(
+            messages=messages,
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+
+    async def multi_model_vote(
+        self,
+        prompt: str,
+        models: list[str] = None,
+        system_prompt: str = "",
+        temperature: float = 0.4,
+        max_tokens: int = 2000,
+    ) -> dict:
+        """
+        多模型投票：让多个模型同时回答同一问题
+
+        Returns:
+            {responses, consensus_direction, agreement_pct}
+        """
+        import asyncio as _asyncio
+
+        models = models or ["mimo-v2.5-pro", "mimo-v2-flash"]
+        messages = []
+        if system_prompt:
+            messages.append(MiMoMessage(role="system", content=system_prompt))
+        messages.append(MiMoMessage(role="user", content=prompt))
+
+        tasks = {
+            m: self.chat(messages=messages, model=m, temperature=temperature, max_tokens=max_tokens)
+            for m in models
+        }
+
+        responses = {}
+        for model, task in tasks.items():
+            try:
+                responses[model] = await task
+            except Exception as e:
+                logger.warning(f"Model {model} failed in vote: {e}")
+
+        directions = {}
+        for model, resp in responses.items():
+            t = resp.content.lower()
+            if "做多" in resp.content or "long" in t or "买入" in resp.content:
+                directions[model] = "long"
+            elif "做空" in resp.content or "short" in t or "卖出" in resp.content:
+                directions[model] = "short"
+            else:
+                directions[model] = "wait"
+
+        counts = {}
+        for d in directions.values():
+            counts[d] = counts.get(d, 0) + 1
+        consensus = max(counts, key=counts.get) if counts else "wait"
+        agreement = counts.get(consensus, 0) / len(directions) if directions else 0
+
+        best_model = "mimo-v2.5-pro" if "mimo-v2.5-pro" in responses else next(iter(responses))
+        return {
+            "responses": responses,
+            "directions": directions,
+            "consensus_direction": consensus,
+            "agreement_pct": round(agreement * 100, 1),
+            "best_response": responses[best_model],
+        }
+
+    async def structured_output(
+        self,
+        prompt: str,
+        output_schema: dict,
+        model: str = "mimo-v2.5-pro",
+        temperature: float = 0.2,
+    ) -> dict:
+        """
+        结构化输出：让模型按指定schema输出JSON
+        """
+        import json
+
+        schema_str = json.dumps(output_schema, ensure_ascii=False, indent=2)
+        system = (
+            "你必须严格按照提供的JSON Schema输出结果。\n"
+            f"Schema:\n{schema_str}\n\n"
+            "只输出JSON，不要输出任何其他内容。"
+        )
+        messages = [
+            MiMoMessage(role="system", content=system),
+            MiMoMessage(role="user", content=prompt),
+        ]
+        response = await self.chat(
+            messages=messages, model=model,
+            temperature=temperature, max_tokens=2000,
+        )
+
+        try:
+            text = response.content.strip()
+            if text.startswith("```"):
+                text = text.split("\n", 1)[1].rsplit("```", 1)[0]
+            return json.loads(text)
+        except json.JSONDecodeError:
+            start = text.find("{")
+            end = text.rfind("}") + 1
+            if start >= 0 and end > start:
+                try:
+                    return json.loads(text[start:end])
+                except json.JSONDecodeError:
+                    pass
+            return {"raw_response": response.content, "parse_error": True}
+
+    async def analyze_with_tools(
+        self,
+        prompt: str,
+        tools: list[dict],
+        model: str = "mimo-v2.5-pro",
+        max_rounds: int = 5,
+    ) -> dict:
+        """
+        工具调用：让模型使用工具完成任务（多轮）
+        """
+        messages = [
+            MiMoMessage(role="system", content="你可以使用工具来完成任务。请按需调用工具。"),
+            MiMoMessage(role="user", content=prompt),
+        ]
+
+        tool_calls_log = []
+        for round_idx in range(max_rounds):
+            response = await self.chat(
+                messages=messages, model=model,
+                tools=tools, temperature=0.3, max_tokens=3000,
+            )
+
+            if response.finish_reason != "tool_calls":
+                break
+
+            tool_calls_log.append({
+                "round": round_idx + 1,
+                "model": response.model,
+            })
+
+            messages.append(MiMoMessage(
+                role="assistant",
+                content=response.content,
+            ))
+
+        return {
+            "final_response": response.content,
+            "tool_rounds": len(tool_calls_log),
+            "tool_calls_log": tool_calls_log,
+            "model": response.model,
+        }
