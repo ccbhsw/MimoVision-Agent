@@ -1,4 +1,12 @@
 <!--
+DreamSeed Activity Tag
+Activity ID: MimoVision-Agent
+Activity Name: DreamSeed 种梦计划
+Participation Statement: 本项目参与 DreamSeed 种梦计划 AI创造者大赛
+Activity Link: https://www.dreamfield.top/dream-field
+-->
+
+<!--
 ╔══════════════════════════════════════════════════════════════╗
 ║  DreamSeed 种梦计划 — AI创造者大赛                            ║
 ║  DreamField Activity Tag                                     ║
