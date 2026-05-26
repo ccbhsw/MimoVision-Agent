@@ -6,19 +6,6 @@ Participation Statement: 本项目参与 DreamSeed 种梦计划 AI创造者大�
 Activity Link: https://www.dreamfield.top/dream-field
 -->
 
-<!--
-╔══════════════════════════════════════════════════════════════╗
-║  DreamSeed 种梦计划 — AI创造者大赛                            ║
-║  DreamField Activity Tag                                     ║
-╠══════════════════════════════════════════════════════════════╣
-║  活动: DreamSeed 种梦计划                                     ║
-║  平台: DreamField (https://www.dreamfield.top)                ║
-║  参赛声明: 本项目为 DreamSeed 种梦计划参赛作品                ║
-║  造梦者: ccbhsw                                               ║
-║  项目: MimoVision-Agent                                       ║
-╚══════════════════════════════════════════════════════════════╝
--->
-
 # MimoVision-Agent
 
 <div align="center">
